@@ -1,0 +1,11 @@
+{
+  "name": "批量文件加前缀",
+  "description": "为指定文件夹下的文件批量添加前缀",
+  "type": "python",
+  "entry": "run.py",
+  "version": "1.0.0",
+  "args": [
+    {"name": "folder", "label": "目标文件夹", "type": "folder", "default": ""},
+    {"name": "prefix", "label": "前缀", "type": "string", "default": "PRE_"}
+  ]
+}
