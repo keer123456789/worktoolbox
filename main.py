@@ -21,20 +21,30 @@ BASE_DIR = Path(__file__).resolve().parent
 PLUGINS_DIR = BASE_DIR / "plugins"
 PLUGINS_DIR.mkdir(exist_ok=True)
 
-CONFIG_FILE = Path(__file__).parent / "config.json"
-
 
 def load_config():
-    if CONFIG_FILE.exists():
-        try:
-            return json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            return {}
-    return {}
+    try:
+        return json.loads(get_config_path().read_text(encoding="utf-8"))
+    except Exception as e:
+        return {}
 
 
 def save_config(cfg: dict):
-    CONFIG_FILE.write_text(json.dumps(cfg, indent=2, ensure_ascii=False), encoding="utf-8")
+    get_config_path().write_text(json.dumps(cfg, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def get_config_path():
+    if getattr(sys, 'frozen', False):
+        # 如果是打包后的exe
+        base_dir = os.path.dirname(sys.executable)
+    else:
+        # 如果是开发环境
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # 构建plugins文件夹路径
+    config_path = os.path.join(base_dir, 'config.json')
+    Path(config_path).touch(exist_ok=True)
+    return Path(config_path)
 
 
 def get_plugins_folder():
