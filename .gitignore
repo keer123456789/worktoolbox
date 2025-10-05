@@ -3,3 +3,5 @@
 /dist/
 plugins/
 .idea/
+venv
+/venv/

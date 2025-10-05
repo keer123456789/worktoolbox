@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem,
     QPushButton, QFileDialog, QMessageBox, QLabel, QGroupBox, QFormLayout,
     QLineEdit, QPlainTextEdit, QSplitter, QFrame, QComboBox, QSpacerItem, QSizePolicy,
-    QHBoxLayout, QDialog
+    QHBoxLayout, QDialog, QScrollArea
 )
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -69,7 +69,7 @@ class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("办公百宝箱")
-        icon_path = os.path.join(os.path.dirname(__file__), "logo.png")
+        icon_path = os.path.join(os.path.dirname(__file__), "doc/logo.png")
         self.setWindowIcon(QIcon(icon_path))
         self.resize(1000, 600)
         self.process = None
@@ -128,9 +128,18 @@ class MainWindow(QWidget):
 
         # 参数区域放在 GroupBox 里并可滚动（若需再改为 QScrollArea）
         self.args_group = QGroupBox("参数")
-        self.args_form = QFormLayout()
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+
+        form_container = QWidget()
+        self.args_form = QFormLayout(form_container)
         self.args_form.setLabelAlignment(Qt.AlignRight)
-        self.args_group.setLayout(self.args_form)
+        self.args_form.setSpacing(8)
+
+        scroll_area.setWidget(form_container)
+
+        vbox = QVBoxLayout(self.args_group)
+        vbox.addWidget(scroll_area)
         right_top_v.addWidget(self.args_group)
 
         # 执行按钮区域
@@ -158,7 +167,8 @@ class MainWindow(QWidget):
         self.log_area.setReadOnly(True)
         self.log_area.setFont(QFont("Courier", 10))
         right_bottom_v.addWidget(self.log_area, 1)
-
+        self.clear_log_btn = QPushButton("清空日志")
+        right_bottom_v.addWidget(self.clear_log_btn)
         right_bottom = QWidget()
         right_bottom.setLayout(right_bottom_v)
 
@@ -187,7 +197,7 @@ class MainWindow(QWidget):
         self.run_btn.clicked.connect(self.on_run_clicked)
         self.stop_btn.clicked.connect(self.on_stop_clicked)
         self.setting_btn.clicked.connect(self.on_setting_clicked)
-
+        self.clear_log_btn.clicked.connect(self.on_clear_log_clicked)
         # 样式（简单美化）
         self.setStyleSheet("""
             QPushButton { padding:6px 10px; }
@@ -425,7 +435,10 @@ class MainWindow(QWidget):
 
         self.process = QProcess(self)
         # set working directory to plugin path
+
         self.process.setWorkingDirectory(str(plugin_path))
+        self.process.setProcessChannelMode(QProcess.MergedChannels)
+        self.process.setReadChannel(QProcess.StandardOutput)
         self.process.readyReadStandardOutput.connect(self.on_stdout)
         self.process.readyReadStandardError.connect(self.on_stderr)
         self.process.finished.connect(self.on_finished)
@@ -442,7 +455,10 @@ class MainWindow(QWidget):
             qargs = args
         elif ptype == "java" or script_path.lower().endswith(".jar"):
             program = self.config.get("java_path")
-            qargs = args
+            if not program or not Path(program).exists():
+                QMessageBox.warning(self, "警告", "未配置 Java 路径，请先在设置中配置 JDK！")
+                return
+            qargs = ["-Dfile.encoding=UTF-8", "-jar", str(script_path)] + args
         else:
             # try make executable
             program = script_path
@@ -450,6 +466,7 @@ class MainWindow(QWidget):
 
         # start
         try:
+            self.append_log("******************************")
             self.append_log(f"启动：{program} {' '.join(qargs)}")
             self.run_btn.setEnabled(False)
             self.stop_btn.setEnabled(True)
@@ -474,16 +491,16 @@ class MainWindow(QWidget):
     def on_stdout(self):
         if not self.process:
             return
-        data = bytes(self.process.readAllStandardOutput()).decode(errors="ignore")
-        if data:
-            self.append_log(data)
+        data = self.process.readAllStandardOutput().data().decode('utf-8', errors='ignore')
+        if data.strip():
+            self.append_log(data.strip())
 
     def on_stderr(self):
         if not self.process:
             return
-        data = bytes(self.process.readAllStandardError()).decode(errors="ignore")
-        if data:
-            self.append_log("[ERR] " + data)
+        data = self.process.readAllStandardError().data().decode('utf-8', errors='ignore')
+        if data.strip():
+            self.append_log("[ERR] " + data.strip())
 
     def on_finished(self, exitCode, exitStatus):
         self.append_log(f"进程结束，退出码：{exitCode}")
@@ -511,6 +528,9 @@ class MainWindow(QWidget):
         if dlg.exec():
             self.config = dlg.config
             self.append_log("配置已更新")
+
+    def on_clear_log_clicked(self):
+        self.clear_log();
 
 
 class SettingsDialog(QDialog):
@@ -550,8 +570,12 @@ class SettingsDialog(QDialog):
 
 
 if __name__ == "__main__":
+    if hasattr(sys, '_MEIPASS'):
+        base_path = sys._MEIPASS  # PyInstaller 临时路径
+    else:
+        base_path = os.path.abspath(".")
+    icon_path = os.path.join(base_path, "logo.ico")
     app = QApplication(sys.argv)
-    icon_path = os.path.join(os.path.dirname(__file__), "logo.ico")
     app.setWindowIcon(QIcon(icon_path))
     win = MainWindow()
     win.show()
