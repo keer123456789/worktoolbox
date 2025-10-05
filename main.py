@@ -14,12 +14,46 @@ from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem,
     QPushButton, QFileDialog, QMessageBox, QLabel, QGroupBox, QFormLayout,
     QLineEdit, QPlainTextEdit, QSplitter, QFrame, QComboBox, QSpacerItem, QSizePolicy,
-    QHBoxLayout
+    QHBoxLayout, QDialog
 )
 
 BASE_DIR = Path(__file__).resolve().parent
 PLUGINS_DIR = BASE_DIR / "plugins"
 PLUGINS_DIR.mkdir(exist_ok=True)
+
+CONFIG_FILE = Path(__file__).parent / "config.json"
+
+
+def load_config():
+    if CONFIG_FILE.exists():
+        try:
+            return json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+    return {}
+
+
+def save_config(cfg: dict):
+    CONFIG_FILE.write_text(json.dumps(cfg, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def get_plugins_folder():
+    # 获取exe所在目录
+    if getattr(sys, 'frozen', False):
+        # 如果是打包后的exe
+        base_dir = os.path.dirname(sys.executable)
+    else:
+        # 如果是开发环境
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # 构建plugins文件夹路径
+    plugins_dir = os.path.join(base_dir, 'plugins')
+
+    # 如果plugins文件夹不存在，则创建
+    if not os.path.exists(plugins_dir):
+        os.makedirs(plugins_dir)
+
+    return Path(plugins_dir)
 
 
 def ts():
@@ -41,7 +75,7 @@ class MainWindow(QWidget):
         self.process = None
         self.current_plugin = None
         self.arg_widgets = []  # list of dicts: {'spec':spec, 'widget': widget}
-
+        self.config = load_config()
         self.init_ui()
         self.load_plugins()
 
@@ -58,15 +92,17 @@ class MainWindow(QWidget):
         up_btn_row = QHBoxLayout()
         self.upload_btn = QPushButton("上传新插件")
         self.refresh_btn = QPushButton("刷新列表")
+        self.setting_btn = QPushButton("设置")
         up_btn_row.addWidget(self.upload_btn)
         up_btn_row.addWidget(self.refresh_btn)
+        up_btn_row.addWidget(self.setting_btn)
         left_box.addLayout(up_btn_row)
 
         self.plugin_list = QListWidget()
         self.plugin_list.setSelectionMode(QListWidget.SingleSelection)
         left_box.addWidget(self.plugin_list, 1)
 
-        left_footer = QLabel("插件目录： " + str(PLUGINS_DIR))
+        left_footer = QLabel("插件目录： " + str(get_plugins_folder()))
         left_footer.setStyleSheet("color: #666; font-size: 11px;")
         left_box.addWidget(left_footer)
 
@@ -150,6 +186,7 @@ class MainWindow(QWidget):
         self.plugin_list.itemSelectionChanged.connect(self.on_plugin_selected)
         self.run_btn.clicked.connect(self.on_run_clicked)
         self.stop_btn.clicked.connect(self.on_stop_clicked)
+        self.setting_btn.clicked.connect(self.on_setting_clicked)
 
         # 样式（简单美化）
         self.setStyleSheet("""
@@ -163,14 +200,14 @@ class MainWindow(QWidget):
         """扫描 plugins 目录，加载 plugin.json 信息"""
         self.plugin_list.clear()
         count = 0
-        for p in sorted(PLUGINS_DIR.iterdir()):
+        for p in sorted(get_plugins_folder().iterdir()):
             if p.is_dir():
                 j = p / "plugin.json"
                 if j.exists():
                     try:
                         meta = json.loads(j.read_text(encoding="utf-8"))
                         meta['path'] = str(p)
-                        item = QListWidgetItem(str(count+1)+'. '+meta.get("name", p.name))
+                        item = QListWidgetItem(str(count + 1) + '. ' + meta.get("name", p.name))
                         item.setData(Qt.UserRole, meta)
                         item.setToolTip(meta.get("description", ""))
                         self.plugin_list.addItem(item)
@@ -294,7 +331,7 @@ class MainWindow(QWidget):
                 return
             meta = json.loads(found.read_text(encoding="utf-8"))
             plugin_name = sanitize_name(meta.get("folder", meta.get("name", Path(file_path).stem)))
-            dest = PLUGINS_DIR / plugin_name
+            dest = get_plugins_folder() / plugin_name
             if dest.exists():
                 # 提示覆盖或改名
                 ret = QMessageBox.question(self, "插件已存在", f"插件目录 {dest} 已存在，是否覆盖？",
@@ -306,7 +343,7 @@ class MainWindow(QWidget):
                     # 尝试创建新名字
                     idx = 1
                     while True:
-                        cand = PLUGINS_DIR / f"{plugin_name}_{idx}"
+                        cand = get_plugins_folder() / f"{plugin_name}_{idx}"
                         if not cand.exists():
                             dest = cand
                             break
@@ -403,6 +440,9 @@ class MainWindow(QWidget):
         elif ptype == "exe" or script_path.lower().endswith(".exe"):
             program = script_path
             qargs = args
+        elif ptype == "java" or script_path.lower().endswith(".jar"):
+            program = self.config.get("java_path")
+            qargs = args
         else:
             # try make executable
             program = script_path
@@ -465,6 +505,48 @@ class MainWindow(QWidget):
             self.process.kill()
             self.append_log("已发送 kill 信号")
             self.stop_btn.setEnabled(False)
+
+    def on_setting_clicked(self):
+        dlg = SettingsDialog(self.config, self)
+        if dlg.exec():
+            self.config = dlg.config
+            self.append_log("配置已更新")
+
+
+class SettingsDialog(QDialog):
+    def __init__(self, config: dict, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("设置")
+        self.resize(400, 120)
+        self.config = config.copy()
+
+        self.form_layout = QFormLayout(self)
+
+        self.java_input = QLineEdit(self.config.get("java_path", ""))
+        self.choose_btn = QPushButton("选择...")
+        self.choose_btn.clicked.connect(self.choose_java)
+
+        hbox = QHBoxLayout()
+        hbox.addWidget(self.java_input)
+        hbox.addWidget(self.choose_btn)
+
+        self.form_layout.addRow("Java路径：", hbox)
+
+        self.save_btn = QPushButton("保存")
+        self.save_btn.clicked.connect(self.save)
+        self.form_layout.addRow(self.save_btn)
+
+    def choose_java(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "选择 java.exe", "", "Executable (*.exe)")
+        if file_path:
+            self.java_input.setText(file_path)
+
+    def save(self):
+        self.config["java_path"] = self.java_input.text().strip()
+        save_config(self.config)
+        QMessageBox.information(self, "成功", "设置已保存")
+        self.accept()
 
 
 if __name__ == "__main__":
