@@ -9,7 +9,7 @@
 首先需要安装32位python 3.7,下载本项目
 
 - 安装依赖 `pip install -r requirement.txt`
-- 打包`pyinstaller -F -w -name worktoolbox main.py`
+- 打包`pyinstaller main.spec`
 - 进入到`dist`文件夹,双击`worktoolbox.exe`即可运行
 
 ## 3.插件介绍

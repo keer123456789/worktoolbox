@@ -1,19 +1,19 @@
 # main.py
-import sys
-import os
 import json
-import zipfile
+import os
 import shutil
+import sys
 import tempfile
 import time
+import zipfile
 from pathlib import Path
 
 from PyQt5.QtCore import Qt, QProcess, QTimer
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem,
+    QApplication, QWidget, QVBoxLayout, QListWidget, QListWidgetItem,
     QPushButton, QFileDialog, QMessageBox, QLabel, QGroupBox, QFormLayout,
-    QLineEdit, QPlainTextEdit, QSplitter, QFrame, QComboBox, QSpacerItem, QSizePolicy,
+    QLineEdit, QPlainTextEdit, QSplitter, QComboBox, QSpacerItem, QSizePolicy,
     QHBoxLayout, QDialog, QScrollArea
 )
 
