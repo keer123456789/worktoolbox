@@ -278,10 +278,10 @@ class MainWindow(QWidget):
                 le.setText(str(default))
                 btn = QPushButton("选择文件")
 
-                def _choose():
+                def _choose(_checked=False,_le=le):
                     fn, _ = QFileDialog.getOpenFileName(self, "选择文件")
                     if fn:
-                        le.setText(fn)
+                        _le.setText(fn)
 
                 btn.clicked.connect(_choose)
                 h.addWidget(le)
@@ -293,21 +293,21 @@ class MainWindow(QWidget):
                 w = QWidget()
                 h = QHBoxLayout()
                 h.setContentsMargins(0, 0, 0, 0)
-                le = QLineEdit()
-                le.setText(str(default))
-                btn = QPushButton("选择文件夹")
+                fle = QLineEdit()
+                fle.setText(str(default))
+                fbtn = QPushButton("选择文件夹")
 
-                def _choose_dir():
+                def _choose_dir(_checked=False,_fle=fle):
                     d = QFileDialog.getExistingDirectory(self, "选择文件夹")
                     if d:
-                        le.setText(d)
+                        _fle.setText(d)
 
-                btn.clicked.connect(_choose_dir)
-                h.addWidget(le)
-                h.addWidget(btn)
+                fbtn.clicked.connect(_choose_dir)
+                h.addWidget(fle)
+                h.addWidget(fbtn)
                 w.setLayout(h)
                 widget = w
-                widget._value_widget = le
+                widget._value_widget = fle
             elif atype == "choice":
                 cb = QComboBox()
                 for o in spec.get("options", []):
@@ -580,6 +580,7 @@ class SettingsDialog(QDialog):
 
 
 if __name__ == "__main__":
+    dirs = get_plugins_folder().iterdir()
     if hasattr(sys, '_MEIPASS'):
         base_path = sys._MEIPASS  # PyInstaller 临时路径
     else:
