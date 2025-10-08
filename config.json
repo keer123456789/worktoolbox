@@ -1,3 +1,12 @@
 {
-  "java_path": "C:/Program Files/Java/jdk1.8.0_131/bin/java.exe"
+  "java_path": {
+    "value": "C:/Program Files/Java/jdk1.8.0_131/bin/java.exe",
+    "label": "jdk路径",
+    "type": "file"
+  },
+  "plugin_path": {
+    "value": "C:/Users/keer/Desktop/windows工具/plugins",
+    "label": "插件路径",
+    "type": "folder"
+  }
 }
