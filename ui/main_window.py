@@ -23,7 +23,7 @@ class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("办公百宝箱")
-        icon_path = os.path.join(os.path.dirname(__file__), "doc/logo.png")
+        icon_path = os.path.join(core.get_base_path(), "doc/logo.png")
         self.setWindowIcon(QIcon(icon_path))
         self.resize(1000, 600)
         self.process = None
