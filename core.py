@@ -9,7 +9,19 @@ def load_config():
     try:
         return json.loads(get_config_path().read_text(encoding="utf-8"))
     except Exception as e:
-        return {}
+        defalut = {
+            "java_path": {
+                "value": "",
+                "label": "jdk路径",
+                "type": "file"
+            },
+            "plugin_path": {
+                "value": "C:/plugins",
+                "label": "插件路径",
+                "type": "folder"
+            }
+        }
+        return defalut
 
 
 def save_config(cfg: dict):
