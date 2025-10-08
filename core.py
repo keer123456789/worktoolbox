@@ -52,7 +52,7 @@ def get_config_path():
 
 
 def get_plugins_folder():
-    plugins_dir = get_base_path() + "plugins"
+    plugins_dir = get_base_path() + "/plugins"
     # 构建plugins文件夹路径
     if load_config().get("plugin_path"):
         plugins_dir = load_config().get("plugin_path").get("value")
