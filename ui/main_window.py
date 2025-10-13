@@ -408,7 +408,7 @@ class MainWindow(QWidget):
             program = script_path
             qargs = args
         elif ptype == "java" or script_path.lower().endswith(".jar"):
-            program = self.config.get("java_path")
+            program = self.config.get("java_path").get("value")
             if not program or not Path(program).exists():
                 QMessageBox.warning(self, "警告", "未配置 Java 路径，请先在设置中配置 JDK！")
                 return
