@@ -70,3 +70,12 @@ def ts():
 def sanitize_name(s: str):
     # 简单过滤文件夹名非法字符
     return "".join(c for c in s if c.isalnum() or c in "-_ ").strip()
+
+def get_loggers_path():
+    """初始化主程序与插件日志记录器"""
+    log_base_path = os.path.join(get_base_path(), 'log/')
+    plugin_log_dir = os.path.join(log_base_path, 'plugins/')
+    return log_base_path, plugin_log_dir
+
+
+

@@ -5,3 +5,4 @@ plugins/
 .idea/
 venv
 /venv/
+log

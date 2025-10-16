@@ -9,13 +9,18 @@ from PyQt5.QtWidgets import (
 
 import core
 from ui.main_window import MainWindow
+from logger_manager import init_logging
+import logging
 
 if __name__ == "__main__":
-    dirs = core.get_plugins_folder().iterdir()
+    log_base_path, plugin_log_dir = core.get_loggers_path()
+    init_logging(log_dir=log_base_path,main_log_name='app.log')
     icon_path = os.path.join(core.get_base_path(), "doc/logo.png")
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon(icon_path))
     win = MainWindow()
     win.show()
 
-    sys.exit(app.exec_())
+    exec_num=app.exec_()
+    logging.info("==系统退出==")
+    sys.exit(exec_num)
