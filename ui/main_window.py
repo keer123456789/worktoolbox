@@ -108,7 +108,7 @@ class MainWindow(QWidget):
 
         right_top = QWidget()
         right_top.setLayout(right_top_v)
-        right_top.setMinimumHeight(240)
+        # right_top.setMinimumHeight(240)
 
         # 右侧 下半：日志
         right_bottom_v = QVBoxLayout()
@@ -130,6 +130,13 @@ class MainWindow(QWidget):
         right_splitter = QSplitter(Qt.Vertical)
         right_splitter.addWidget(right_top)
         right_splitter.addWidget(right_bottom)
+        # 设置初始比例（上:下 = 3:2，可根据你喜好调整）
+        right_splitter.setSizes([250, 400])
+        right_splitter.setHandleWidth(4)
+        right_splitter.setStyleSheet("QSplitter::handle { background: #ccc; }")
+        # 拖动时右侧两个区域自适应伸缩
+        right_splitter.setStretchFactor(0, 3)
+        right_splitter.setStretchFactor(1, 2)
         right_splitter.setStretchFactor(0, 0)
         right_splitter.setStretchFactor(1, 1)
 
