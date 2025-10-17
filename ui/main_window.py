@@ -181,7 +181,7 @@ class MainWindow(QWidget):
         self.args_group = QGroupBox("参数")
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
-        scroll_area.setStyleSheet("border:none;background-color:#ffffff;width:10px;border-radius: 5px;")
+        scroll_area.setStyleSheet("background-color:#ffffff;width:10px;border-radius: 5px;")
 
         form_container = QWidget()
         self.args_form = QFormLayout(form_container)
@@ -324,7 +324,7 @@ class MainWindow(QWidget):
                 le = QLineEdit()
                 le.setText(str(default))
                 btn = QPushButton("选择文件")
-
+                btn.setFixedWidth(80)
                 def _choose(_checked=False, _le=le):
                     fn, _ = QFileDialog.getOpenFileName(self, "选择文件")
                     if fn:
@@ -343,7 +343,7 @@ class MainWindow(QWidget):
                 fle = QLineEdit()
                 fle.setText(str(default))
                 fbtn = QPushButton("选择文件夹")
-
+                fbtn.setFixedWidth(90)
                 def _choose_dir(_checked=False, _fle=fle):
                     d = QFileDialog.getExistingDirectory(self, "选择文件夹")
                     if d:
@@ -371,7 +371,9 @@ class MainWindow(QWidget):
                 widget.setText(str(default))
 
             self.arg_widgets.append({"spec": spec, "widget": widget})
-            self.args_form.addRow(QLabel(label + ":"), widget)
+            widget.setFixedWidth(400)
+            qlabel=QLabel(label + ":")
+            self.args_form.addRow(qlabel, widget)
 
         # 如果没有 args，显示占位
         if not args:
