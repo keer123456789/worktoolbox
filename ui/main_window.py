@@ -18,6 +18,101 @@ from PyQt5.QtWidgets import (
 import core
 from ui.settings_dialog import SettingsDialog
 
+APP_MAC_STYLE = """
+QWidget {
+    background-color: #f5f5f7;
+    font-family: 'Segoe UI', 'Helvetica Neue', 'PingFang SC';
+    font-size: 13px;
+    color: #2c2c2e;
+}
+
+QLabel {
+    color: #2c2c2e;
+}
+
+QGroupBox {
+    background: #ffffff;
+    border: 1px solid #d2d2d7;
+    border-radius: 10px;
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+QPushButton {
+    background-color: #e9e9eb;
+    border: 1px solid #d0d0d2;
+    border-radius: 8px;
+    padding: 6px 12px;
+    color: #1c1c1e;
+}
+QPushButton:hover {
+    background-color: #dcdcdc;
+}
+QPushButton:pressed {
+    background-color: #cfcfcf;
+}
+QPushButton:disabled {
+    background-color: #f0f0f0;
+    color: #aaa;
+}
+
+QLineEdit, QTextEdit, QPlainTextEdit, QComboBox {
+    background-color: #ffffff;
+    border: 1px solid #d2d2d7;
+    border-radius: 6px;
+    padding: 4px 6px;
+}
+
+QListWidget {
+    background-color: #ffffff;
+    border: 1px solid #d2d2d7;
+    border-radius: 8px;
+    padding: 4px;
+}
+
+QScrollBar:vertical {
+    border: none;
+    background: #f0f0f0;
+    width: 10px;
+    border-radius: 5px;
+}
+QScrollBar::handle:vertical {
+    background: #c6c6c8;
+    border-radius: 5px;
+    min-height: 20px;
+}
+QScrollBar::handle:vertical:hover {
+    background: #a9a9ab;
+}
+
+QScrollBar:horizontal {
+    border: none;
+    background: #f0f0f0;
+    height: 10px;
+    border-radius: 5px;
+}
+QScrollBar::handle:horizontal {
+    background: #c6c6c8;
+    border-radius: 5px;
+    min-width: 20px;
+}
+QScrollBar::handle:horizontal:hover {
+    background: #a9a9ab;
+}
+
+QSplitter::handle {
+    background: #d1d1d6;
+    border: none;
+}
+
+QToolTip {
+    background-color: #ffffff;
+    border: 1px solid #c6c6c8;
+    border-radius: 6px;
+    color: #2c2c2e;
+    padding: 5px;
+}
+"""
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -34,6 +129,7 @@ class MainWindow(QWidget):
         self.load_plugins()
 
     def init_ui(self):
+        self.setStyleSheet(APP_MAC_STYLE)
         # 左侧：上传 + 插件列表
         left_box = QVBoxLayout()
         left_box.setSpacing(8)
@@ -61,6 +157,7 @@ class MainWindow(QWidget):
         left_box.addWidget(left_footer)
 
         left_widget = QWidget()
+        left_widget.setStyleSheet("background-color: #f0f0f3; border-right: 1px solid #d2d2d7;")
         left_widget.setLayout(left_box)
         left_widget.setMinimumWidth(260)
         left_widget.setMaximumWidth(420)
@@ -84,6 +181,7 @@ class MainWindow(QWidget):
         self.args_group = QGroupBox("参数")
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
+        scroll_area.setStyleSheet("border:none;background-color:#ffffff;width:10px;border-radius: 5px;")
 
         form_container = QWidget()
         self.args_form = QFormLayout(form_container)
@@ -132,8 +230,6 @@ class MainWindow(QWidget):
         right_splitter.addWidget(right_bottom)
         # 设置初始比例（上:下 = 3:2，可根据你喜好调整）
         right_splitter.setSizes([250, 400])
-        right_splitter.setHandleWidth(4)
-        right_splitter.setStyleSheet("QSplitter::handle { background: #ccc; }")
         # 拖动时右侧两个区域自适应伸缩
         right_splitter.setStretchFactor(0, 3)
         right_splitter.setStretchFactor(1, 2)
