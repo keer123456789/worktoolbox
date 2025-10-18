@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import (
 
 import core
 from ui.settings_dialog import SettingsDialog
+from logger_manager import get_plugin_logger
 
 APP_MAC_STYLE = """
 QWidget {
@@ -114,6 +115,7 @@ QToolTip {
 }
 """
 
+
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -127,6 +129,7 @@ class MainWindow(QWidget):
         self.config = core.load_config()
         self.init_ui()
         self.load_plugins()
+        self.plugin_logger = None
 
     def init_ui(self):
         self.setStyleSheet(APP_MAC_STYLE)
@@ -325,6 +328,7 @@ class MainWindow(QWidget):
                 le.setText(str(default))
                 btn = QPushButton("选择文件")
                 btn.setFixedWidth(80)
+
                 def _choose(_checked=False, _le=le):
                     fn, _ = QFileDialog.getOpenFileName(self, "选择文件")
                     if fn:
@@ -344,6 +348,7 @@ class MainWindow(QWidget):
                 fle.setText(str(default))
                 fbtn = QPushButton("选择文件夹")
                 fbtn.setFixedWidth(90)
+
                 def _choose_dir(_checked=False, _fle=fle):
                     d = QFileDialog.getExistingDirectory(self, "选择文件夹")
                     if d:
@@ -372,7 +377,7 @@ class MainWindow(QWidget):
 
             self.arg_widgets.append({"spec": spec, "widget": widget})
             widget.setFixedWidth(400)
-            qlabel=QLabel(label + ":")
+            qlabel = QLabel(label + ":")
             self.args_form.addRow(qlabel, widget)
 
         # 如果没有 args，显示占位
@@ -456,9 +461,11 @@ class MainWindow(QWidget):
             args.append(str(val))
         self.start_process(meta, args)
 
-    def append_log(self, text: str):
+    def append_log(self, text: str, is_append_file=False):
         for line in str(text).splitlines():
             self.log_area.appendPlainText(f"[{core.ts()}] {line}")
+            if is_append_file and self.plugin_logger is not None:
+                self.plugin_logger.info(line)
 
     def clear_log(self):
         self.log_area.clear()
@@ -507,7 +514,14 @@ class MainWindow(QWidget):
             program = "cmd"
             qargs = ["/c", script_path] + args
         elif ptype == "python" or script_path.lower().endswith(".py"):
-            program = sys.executable or "python"
+            HAS_PYTHON = bool(shutil.which("python3") or shutil.which("python"))
+            if not HAS_PYTHON:
+                QMessageBox.warning(self, "警告", "系统未检测到 Python,不能执行插件")
+                return
+            if getattr(sys, 'frozen', False):
+                program = shutil.which("python3") or shutil.which("python") or "python"
+            else:
+                program = sys.executable
             qargs = [script_path] + args
         elif ptype == "exe" or script_path.lower().endswith(".exe"):
             program = script_path
@@ -525,15 +539,19 @@ class MainWindow(QWidget):
 
         # start
         try:
-            self.append_log("******************************")
-            self.append_log(f"启动：{program} {' '.join(qargs)}")
+            log_base_path, plugin_log_dir = core.get_loggers_path()
+            plugin_name = meta.get("name")
+            self.plugin_logger = get_plugin_logger(plugin_name=core.chinese_to_pinyin_no_space(plugin_name),
+                                                   log_dir=plugin_log_dir)
+            self.append_log("******************************", True)
+            self.append_log(f"启动：{program} {' '.join(qargs)}", True)
             self.run_btn.setEnabled(False)
             self.stop_btn.setEnabled(True)
             self.process.start(program, qargs)
             # slight timeout to check start success
             QTimer.singleShot(800, self._check_started)
         except Exception as e:
-            self.append_log("启动失败：" + str(e))
+            self.append_log("启动失败：" + str(e), True)
             self.run_btn.setEnabled(True)
             self.stop_btn.setEnabled(False)
 
@@ -543,7 +561,7 @@ class MainWindow(QWidget):
         if self.process.state() == QProcess.NotRunning:
             # failed to start, read error
             err = bytes(self.process.readAllStandardError()).decode(errors="ignore")
-            self.append_log("进程未启动. 错误: " + err)
+            self.append_log("进程未启动. 错误: " + err, True)
             self.run_btn.setEnabled(True)
             self.stop_btn.setEnabled(False)
 
@@ -552,17 +570,17 @@ class MainWindow(QWidget):
             return
         data = self.process.readAllStandardOutput().data().decode('utf-8', errors='ignore')
         if data.strip():
-            self.append_log(data.strip())
+            self.append_log(data.strip(), True)
 
     def on_stderr(self):
         if not self.process:
             return
         data = self.process.readAllStandardError().data().decode('utf-8', errors='ignore')
         if data.strip():
-            self.append_log("[ERR] " + data.strip())
+            self.append_log("[ERR] " + data.strip(), True)
 
     def on_finished(self, exitCode, exitStatus):
-        self.append_log(f"进程结束，退出码：{exitCode}")
+        self.append_log(f"进程结束，退出码：{exitCode}", True)
         self.run_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
         # clear self.process after short delay
@@ -571,15 +589,17 @@ class MainWindow(QWidget):
     def _clear_process(self):
         try:
             self.process = None
+            self.plugin_logger = None
         except:
             self.process = None
+            self.plugin_logger = None
 
     def on_stop_clicked(self):
         if not self.process:
             return
         if self.process.state() != QProcess.NotRunning:
             self.process.kill()
-            self.append_log("已发送 kill 信号")
+            self.append_log("已发送 kill 信号", True)
             self.stop_btn.setEnabled(False)
 
     def on_setting_clicked(self):

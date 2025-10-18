@@ -3,7 +3,13 @@ import os
 import sys
 import time
 from pathlib import Path
+from pypinyin import lazy_pinyin, Style
 
+def chinese_to_pinyin_no_space(text: str) -> str:
+    # 获取拼音（无声调）
+    pinyins = lazy_pinyin(text, style=Style.NORMAL)
+    # 每个拼音首字母大写，然后拼接
+    return ''.join(word.capitalize() for word in pinyins)
 
 def load_config():
     try:
@@ -76,6 +82,5 @@ def get_loggers_path():
     log_base_path = os.path.join(get_base_path(), 'log/')
     plugin_log_dir = os.path.join(log_base_path, 'plugins/')
     return log_base_path, plugin_log_dir
-
 
 
